@@ -1,0 +1,11 @@
+outputs/
+data/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+*.log
+assets/ft_ti_db/
+assets/suffix/
+diffii_tmp/
+*.zip

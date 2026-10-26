@@ -1,0 +1,7 @@
+dataset,class,stem,status,ref_image_path,ref_mask_path
+imb_cub_0.01,Blue_winged_Warbler,1198,ready,assets/ref_masks/imb_cub_0.01/Blue_winged_Warbler/1198/input_image.png,assets/ref_masks/imb_cub_0.01/Blue_winged_Warbler/1198/mask_binary.png
+imb_cub_0.01,Common_Yellowthroat,1235,ready,assets/ref_masks/imb_cub_0.01/Common_Yellowthroat/1235/input_image.png,assets/ref_masks/imb_cub_0.01/Common_Yellowthroat/1235/mask_binary.png
+imb_cub_0.01,Le_Conte_Sparrow,1164,ready,assets/ref_masks/imb_cub_0.01/Le_Conte_Sparrow/1164/input_image.png,assets/ref_masks/imb_cub_0.01/Le_Conte_Sparrow/1164/mask_binary.png
+imb_flower_0.01,bearded_iris,814,ready,assets/ref_masks/imb_flower_0.01/bearded_iris/814/input_image.png,assets/ref_masks/imb_flower_0.01/bearded_iris/814/mask_binary.png
+imb_flower_0.01,blanket_flower,824,ready,assets/ref_masks/imb_flower_0.01/blanket_flower/824/input_image.png,assets/ref_masks/imb_flower_0.01/blanket_flower/824/mask_binary.png
+imb_flower_0.01,toad_lily,846,ready,assets/ref_masks/imb_flower_0.01/toad_lily/846/input_image.png,assets/ref_masks/imb_flower_0.01/toad_lily/846/mask_binary.png
