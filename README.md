@@ -1,8 +1,6 @@
 # MGR Attention + RNO
 
-Official implementation of
-
-**Improving Diffusion-Based Augmentation for Data-Scarce Image Classification via Mask-Guided Reference Attention and Repulsive Noise Optimization**<br>
+Official implementation of **Improving Diffusion-Based Augmentation for Data-Scarce Image Classification via Mask-Guided Reference Attention and Repulsive Noise Optimization**<br>
 Hyun-Jic Oh\*, GaYeon Koh\*, Won-Ki Jeong<br>
 *IEEE/CVF Winter Conference on Applications of Computer Vision (WACV), 2027* (Round 1 accept)<br>
 (\* equal contribution)
