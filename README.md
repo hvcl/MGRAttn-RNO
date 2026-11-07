@@ -5,7 +5,9 @@ Hyun-Jic Oh\*, GaYeon Koh\*, Won-Ki Jeong<br>
 *IEEE/CVF Winter Conference on Applications of Computer Vision (WACV), 2027* (Round 1 accept)<br>
 (\* equal contribution)
 
-[Paper (coming soon)]()
+[![Project Page](https://img.shields.io/badge/Project_Page-MGRAttn--RNO-1f5fa9?style=for-the-badge&logo=githubpages&logoColor=white)](https://hvcl.github.io/MGRAttn-RNO/)
+[![arXiv](https://img.shields.io/badge/arXiv-2611.04242-b31b1b?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2611.04242)
+[![Code](https://img.shields.io/badge/Code-hvcl%2FMGRAttn--RNO-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hvcl/MGRAttn-RNO)
 
 This repository provides the sampling pipeline for diffusion-based data augmentation with two sampling-time modules:
 

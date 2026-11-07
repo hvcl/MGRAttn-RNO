@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGR Attention + RNO</title>
+<meta name="description" content="Improving Diffusion-Based Augmentation for Data-Scarce Image Classification via Mask-Guided Reference Attention and Repulsive Noise Optimization. WACV 2027.">
+
+<meta property="og:title" content="MGR Attention + RNO (WACV 2027)">
+<meta property="og:description" content="A sampling-side framework that improves diffusion-based data augmentation for data-scarce image classification.">
+<meta property="og:image" content="https://hvcl.github.io/MGRAttn-RNO/static/images/method.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f5fa9'/%3E%3Cpath d='M8 22V10h3.2l4.8 7.4L20.8 10H24v12h-3v-7l-4.1 6.2h-1.8L11 15v7z' fill='white'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #ffffff;
+  --surface: #f7f7f8;
+  --surface-2: #f0f0f2;
+  --text: #16161a;
+  --text-dim: #5c5c66;
+  --text-faint: #8a8a94;
+  --border: #e3e3e7;
+  --accent: #1f5fa9;
+  --accent-soft: #e8f0fa;
+  --mgr: #1f7a4d;
+  --mgr-soft: #e6f3ec;
+  --rno: #b4531f;
+  --rno-soft: #fbeee4;
+  --code-bg: #f4f4f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111114;
+    --surface: #1a1a1f;
+    --surface-2: #212128;
+    --text: #ececf1;
+    --text-dim: #a8a8b4;
+    --text-faint: #7c7c88;
+    --border: #2c2c34;
+    --accent: #7db0e8;
+    --accent-soft: #1b2a3d;
+    --mgr: #6fc79b;
+    --mgr-soft: #16281f;
+    --rno: #e0a177;
+    --rno-soft: #2b1e15;
+    --code-bg: #1b1b21;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111114;
+  --surface: #1a1a1f;
+  --surface-2: #212128;
+  --text: #ececf1;
+  --text-dim: #a8a8b4;
+  --text-faint: #7c7c88;
+  --border: #2c2c34;
+  --accent: #7db0e8;
+  --accent-soft: #1b2a3d;
+  --mgr: #6fc79b;
+  --mgr-soft: #16281f;
+  --rno: #e0a177;
+  --rno-soft: #2b1e15;
+  --code-bg: #1b1b21;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ---------- header ---------- */
+
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 56px 0 36px;
+  text-align: center;
+}
+
+.venue {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 5px 14px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.6rem, 4.2vw, 2.4rem);
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.shortname {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin: 0 0 24px;
+}
+
+.authors {
+  font-size: 1.02rem;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.authors a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+.authors a:hover { border-bottom-color: var(--accent); color: var(--accent); }
+
+.affil {
+  font-size: 0.92rem;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+}
+.eqnote {
+  font-size: 0.84rem;
+  color: var(--text-faint);
+  margin: 0 0 26px;
+}
+
+/* ---------- link buttons ---------- */
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  border: 1px solid var(--text);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn svg { width: 17px; height: 17px; fill: currentColor; flex: none; }
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn.ghost:hover { border-color: var(--text-dim); }
+
+/* ---------- sections ---------- */
+
+section { padding: 44px 0; border-bottom: 1px solid var(--border); }
+section:last-of-type { border-bottom: none; }
+
+h2 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: -0.008em;
+  margin: 0 0 18px;
+}
+
+h3 {
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+p { margin: 0 0 16px; }
+p:last-child { margin-bottom: 0; }
+
+figure { margin: 0; }
+
+figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+figcaption {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  margin-top: 12px;
+  line-height: 1.55;
+}
+
+.lede {
+  font-size: 1.02rem;
+  color: var(--text-dim);
+}
+
+/* ---------- method cards ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--surface);
+}
+.card .tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 10px;
+}
+.card.mgr .tag { color: var(--mgr); background: var(--mgr-soft); }
+.card.rno .tag { color: var(--rno); background: var(--rno-soft); }
+.card p { font-size: 0.94rem; color: var(--text-dim); }
+
+.note {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.93rem;
+  color: var(--text-dim);
+}
+
+/* ---------- results ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.stat {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--surface);
+}
+.stat .num {
+  font-family: Newsreader, Georgia, serif;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--accent);
+}
+.stat .num span { font-size: 1rem; font-weight: 500; }
+.stat .lbl {
+  font-size: 0.86rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* ---------- code ---------- */
+
+.codehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+button.copy {
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+button.copy:hover { border-color: var(--text-dim); color: var(--text); }
+
+pre {
+  margin: 0;
+  padding: 18px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+p code, li code {
+  font-size: 0.88em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+a { color: var(--accent); }
+
+/* ---------- footer ---------- */
+
+footer {
+  padding: 34px 0 52px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-faint);
+  border-top: 1px solid var(--border);
+}
+footer p { margin: 0 0 6px; }
+
+@media (max-width: 600px) {
+  header { padding: 40px 0 30px; }
+  section { padding: 34px 0; }
+  .btn { padding: 8px 15px; font-size: 0.88rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="venue">WACV 2027 &middot; Round 1 Accept</div>
+
+    <h1>Improving Diffusion-Based Augmentation for Data-Scarce Image Classification via Mask-Guided Reference Attention and Repulsive Noise Optimization</h1>
+
+    <p class="shortname">MGR Attention + RNO</p>
+
+    <p class="authors">
+      <a href="https://hjoh01.github.io/">Hyun-Jic Oh</a><sup>*</sup>,
+      GaYeon Koh<sup>*</sup>,
+      <a href="https://hvcl.korea.ac.kr/?page_id=359">Won-Ki Jeong</a>
+    </p>
+    <p class="affil"><a href="https://hvcl.korea.ac.kr/">High Performance Visual Computing Lab</a>, Korea University</p>
+    <p class="eqnote"><sup>*</sup> Equal contribution</p>
+
+    <div class="links">
+      <a class="btn" href="https://arxiv.org/pdf/2611.04242">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14a0 0 0 0 1 0 0H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7.5 1.8V9h5.2L13.5 3.8zM8 12.5h8v1.6H8v-1.6zm0 3.6h8v1.6H8v-1.6zm0-7.2h4v1.6H8V8.9z"/></svg>
+        Paper
+      </a>
+      <a class="btn ghost" href="https://arxiv.org/abs/2611.04242">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 4h17a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm1 2v12h15V6h-15zm2.2 2.3h4.1v1.6H6.7V8.3zm0 3.2h10.6v1.6H6.7v-1.6zm0 3.2h10.6v1.6H6.7v-1.6z"/></svg>
+        arXiv
+      </a>
+      <a class="btn ghost" href="https://github.com/hvcl/MGRAttn-RNO">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.73.5.9 5.33.9 11.6c0 4.9 3.17 9.06 7.57 10.53.55.1.76-.24.76-.53v-2.07c-3.08.67-3.73-1.3-3.73-1.3-.5-1.29-1.23-1.63-1.23-1.63-1.01-.69.08-.67.08-.67 1.11.08 1.7 1.15 1.7 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.7-1.49-2.46-.28-5.05-1.23-5.05-5.48 0-1.21.43-2.2 1.14-2.98-.11-.28-.49-1.41.11-2.94 0 0 .93-.3 3.05 1.14.88-.25 1.83-.37 2.77-.37.94 0 1.89.12 2.78.37 2.11-1.44 3.04-1.14 3.04-1.14.6 1.53.22 2.66.11 2.94.71.78 1.14 1.77 1.14 2.98 0 4.26-2.6 5.2-5.07 5.47.4.35.76 1.03.76 2.08v3.08c0 .3.2.64.77.53 4.39-1.47 7.56-5.62 7.56-10.53C23.1 5.33 18.27.5 12 .5z"/></svg>
+        Code
+      </a>
+      <a class="btn ghost" href="#bibtex">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l5 5v13H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm8 1.9V9h4.1L14 4.9zM8.3 12h7.4v1.5H8.3V12zm0 3.3h7.4v1.5H8.3v-1.5z"/></svg>
+        BibTeX
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <div class="wrap">
+    <figure>
+      <img src="static/images/method.png" alt="Overview of the sampling pipeline. Repulsive Noise Optimization is applied to the initial noise before denoising; Mask-Guided Reference Attention is applied from the mask extraction timestep onward.">
+      <figcaption>
+        <strong>(a)</strong> Sampling pipeline. RNO optimizes the initial noise before denoising; at the mask
+        extraction timestep <em>t<sub>m</sub></em> a foreground mask is obtained from the decoded intermediate image,
+        and MGR Attention runs for the remaining steps. <strong>(b)</strong> RNO pushes each target noise away from
+        frozen anchors in the Tweedie domain. <strong>(c)</strong> MGR Attention updates only the foreground value
+        tokens with reference features. All model weights stay frozen.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Abstract</h2>
+    <p>
+      Diffusion-based data augmentation has emerged as a powerful strategy for addressing data-scarce image
+      classification. Recent pipelines typically adapt a pretrained text-to-image diffusion model to a limited number
+      of class examples and subsequently sample synthetic images using diverse textual prompts. However, in extreme
+      data-scarce regimes such as long-tailed single-sample settings, this approach suffers from a dual failure mode:
+      the generated samples often lack discriminative foreground details crucial for classifier training, and the
+      adapted class prior can bias the early denoising process, causing output images to exhibit similar patterns
+      despite varying text prompts.
+    </p>
+    <p>
+      To overcome these limitations, we propose a sampling-side framework of two complementary components that
+      simultaneously enhance fine details and diversity. First, <strong>Mask-Guided Reference (MGR) Attention</strong>
+      updates only foreground value tokens with reference features via zero-shot segmentation, limiting reference
+      influence to the target object and mitigating excessive global feature injection. Second,
+      <strong>Repulsive Noise Optimization (RNO)</strong> encourages initial noise trajectories to diverge from
+      dominant generative modes of the adapted model, enabling target prompts to express broader contextual variation.
+      Extensive evaluations show consistent improvements, with the largest gains in long-tailed single-sample settings
+      of up to 2.50 and 2.94 points on CUB-LT IF100, and further robustness across few-shot and background-shift
+      evaluations.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Method</h2>
+    <p class="lede">
+      Both components act at sampling time on top of an already-adapted Stable Diffusion v1.5 model. Neither one
+      touches the model weights, so they drop into an existing augmentation pipeline without retraining.
+    </p>
+
+    <div class="cards">
+      <div class="card mgr">
+        <div class="tag">MGR Attention</div>
+        <h3>Keep the reference where it belongs</h3>
+        <p>
+          Zero-shot segmentation localizes the foreground of the target image, and only the foreground value tokens
+          are updated with reference features. Confining the reference to the object recovers the discriminative
+          detail a classifier needs, without the global feature bleed that washes out the background.
+        </p>
+      </div>
+      <div class="card rno">
+        <div class="tag">RNO</div>
+        <h3>Push the noise off the dominant mode</h3>
+        <p>
+          Before denoising starts, each initial noise is optimized with a repulsion-only objective against frozen
+          anchors drawn from the adaptation prompt. Trajectories spread away from the adapted model's dominant modes,
+          so varying the text prompt actually varies the output.
+        </p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Three-stage sampling.</strong> Stage&nbsp;1 applies RNO and denoises to the mask extraction timestep,
+      dumping intermediate images and latents. Stage&nbsp;2 extracts foreground masks with SAM3. Stage&nbsp;3 resumes
+      from the dumped latents with MGR Attention. See the <a href="https://github.com/hvcl/MGRAttn-RNO">repository</a>
+      for runnable examples on CUB-LT IF100 and Flower-LT IF100.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Results</h2>
+    <div class="stats">
+      <div class="stat">
+        <div class="num">+2.50<span> pts</span></div>
+        <div class="lbl">CUB-LT IF100, long-tailed single-sample setting</div>
+      </div>
+      <div class="stat">
+        <div class="num">+2.94<span> pts</span></div>
+        <div class="lbl">CUB-LT IF100, largest reported gain</div>
+      </div>
+      <div class="stat">
+        <div class="num">0</div>
+        <div class="lbl">Model weights changed &mdash; both modules act at sampling time</div>
+      </div>
+    </div>
+    <p>
+      Gains are consistent across settings and largest where data is scarcest. The paper additionally reports few-shot
+      and background-shift evaluations, along with ablations isolating each component. Full tables are in the
+      <a href="https://arxiv.org/abs/2611.04242">paper</a>.
+    </p>
+  </div>
+</section>
+
+<section id="bibtex">
+  <div class="wrap">
+    <div class="codehead">
+      <h2 style="margin:0;">BibTeX</h2>
+      <button class="copy" id="copyBtn" type="button">Copy</button>
+    </div>
+<pre><code id="bib">@inproceedings{oh2027improving,
+  title     = {Improving Diffusion-Based Augmentation for Data-Scarce Image
+               Classification via Mask-Guided Reference Attention and
+               Repulsive Noise Optimization},
+  author    = {Oh, Hyun-Jic and Koh, GaYeon and Jeong, Won-Ki},
+  booktitle = {Proceedings of the IEEE/CVF Winter Conference on Applications
+               of Computer Vision (WACV)},
+  year      = {2027}
+}</code></pre>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Code released under CC BY-NC 4.0. Correspondence: Hyun-Jic Oh and Won-Ki Jeong.</p>
+    <p><a href="https://hvcl.korea.ac.kr/">High Performance Visual Computing Lab</a>, Korea University</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var btn = document.getElementById('copyBtn');
+  var bib = document.getElementById('bib');
+  if (!btn || !bib) return;
+  btn.addEventListener('click', function () {
+    var text = bib.textContent;
+    var done = function () {
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+  function fallback(text, done) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    } catch (e) {
+      btn.textContent = 'Select manually';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
